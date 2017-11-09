@@ -12,8 +12,8 @@ if __name__ =='__main__':
     batch_size =32
     learning_rate = 0.01
     keep_prob =0.7
-    path = '/data/LUNA2016/cubic_normalization_npy'
-    test_path = '/data/LUNA2016/cubic_normalization_test'
+    path = '../../data/LUNA2016/cubic_normalization_npy'
+    test_path = '../data/LUNA2016/cubic_normalization_test'
 
     print(" beigin...")
     model = model(learning_rate,keep_prob,batch_size,40)

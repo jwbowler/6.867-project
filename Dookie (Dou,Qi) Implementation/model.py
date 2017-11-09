@@ -321,16 +321,16 @@ class model(object):
 
             return out_fusion
 
-    def inference(self,npy_path,test_path,model_index,train_flag=True):
+    def inference(self,npy_path,test_path,model_index,test_size,seed,train_flag=True):
 
         # some statistic index
         highest_acc = 0.0
         highest_iterator = 1
 
-        all_filenames = get_all_filename(npy_path,self.cubic_shape[model_index][1])
+        train_filenames,test_filenames = get_train_and_test_filename(npy_path,self.cubic_shape[model_index][1],test_size,seed)
         # how many time should one epoch should loop to feed all data
-        times = len(all_filenames) / self.batch_size
-        if (len(all_filenames) % self.batch_size) != 0:
+        times = len(train_filenames) / self.batch_size
+        if (len(train_filenames) % self.batch_size) != 0:
             times = times + 1
 
         # keep_prob used for dropout
@@ -365,10 +365,10 @@ class model(object):
                 for i in range(self.epoch):
                     epoch_start =time.time()
                     #  the data will be shuffled by every epoch
-                    random.shuffle(all_filenames)
+                    random.shuffle(train_filenames)
                     for t in range(times):
-                        batch_files = all_filenames[t*self.batch_size:(t+1)*self.batch_size]
-                        batch_data, batch_label = get_train_batch(batch_files)
+                        batch_files = train_filenames[t*self.batch_size:(t+1)*self.batch_size]
+                        batch_data, batch_label = get_batch(batch_files)
                         feed_dict = {x: batch_data, real_label: batch_label,
                                      keep_prob: self.keep_prob}
                         _,summary = sess.run([train_step, merged],feed_dict =feed_dict)
@@ -376,7 +376,7 @@ class model(object):
                         saver.save(sess, './ckpt/archi-1', global_step=i + 1)
 
                     epoch_end = time.time()
-                    test_batch,test_label = get_test_batch(test_path)
+                    test_batch,test_label = get_batch(test_filenames)
                     test_dict = {x: test_batch, real_label: test_label, keep_prob:self.keep_prob}
                     acc_test,loss = sess.run([accruacy,net_loss],feed_dict=test_dict)
                     print('accuracy  is %f' % acc_test)

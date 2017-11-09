@@ -13,6 +13,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import traceback
 import random
+from sklearn.model_selection import train_test_split
 from PIL import Image
 
 def get_filename(file_list, case):
@@ -20,16 +21,16 @@ def get_filename(file_list, case):
         if case in f:
             return(f)
 
-def extract_real_cubic_from_mhd(dcim_path,annatation_file,plot_output_path,normalization_output_path):
+def extract_real_cubic_from_mhd(dcim_path,annotation_file,plot_output_path,normalization_output_path):
     '''
       @param: dcim_path :                 the path contains all mhd file
-      @param: annatation_file:            the annatation csv file,contains every nodules' coordinate
+      @param: annotation_file:            the annotation csv file,contains every nodules' coordinate
       @param: plot_output_path:           the save path of extracted cubic of size 20x20x6,30x30x10,40x40x26 npy file(plot ),every nodule end up withs three size
       @param:normalization_output_path:   the save path of extracted cubic of size 20x20x6,30x30x10,40x40x26 npy file(after normalization)
     '''
     file_list=glob(dcim_path+"*.mhd")
     # The locations of the nodes
-    df_node = pd.read_csv(annatation_file)
+    df_node = pd.read_csv(annotation_file)
     df_node["file"] = df_node["seriesuid"].map(lambda file_name: get_filename(file_list, file_name))
     df_node = df_node.dropna()
 
@@ -80,22 +81,22 @@ def extract_real_cubic_from_mhd(dcim_path,annatation_file,plot_output_path,norma
                     np.save(os.path.join(normalization_output_path, "%d_real_size40x40.npy" % node_idx),imgs3)
                     #print("normalization finished!..." )
 
-                except Exception,e:
+                except Exception as e:
                     print(" process images %s error..."%str(file_name))
                     print(Exception,":",e)
                     traceback.print_exc()
 
 
-def extract_fake_cubic_from_mhd(dcim_path,annatation_file,plot_output_path,normalization_output_path):
+def extract_fake_cubic_from_mhd(dcim_path,annotation_file,plot_output_path,normalization_output_path):
     '''
       @param: dcim_path :                 the path contains all mhd file
-      @param: annatation_file:            the candidate csv file,contains every **fake** nodules' coordinate
+      @param: annotation_file:            the candidate csv file,contains every **fake** nodules' coordinate
       @param: plot_output_path:           the save path of extracted cubic of size 20x20x6,30x30x10,40x40x26 npy file(plot ),every nodule end up withs three size
       @param:normalization_output_path:   the save path of extracted cubic of size 20x20x6,30x30x10,40x40x26 npy file(after normalization)
     '''
     file_list=glob(dcim_path+"*.mhd")
     # The locations of the nodes
-    df_node = pd.read_csv(annatation_file)
+    df_node = pd.read_csv(annotation_file)
     df_node["file"] = df_node["seriesuid"].map(lambda file_name: get_filename(file_list, file_name))
     df_node = df_node.dropna()
 
@@ -160,7 +161,7 @@ def extract_fake_cubic_from_mhd(dcim_path,annatation_file,plot_output_path,norma
                     num = num+1
 
                     #print(" extract fake cubic finished...")
-                except Exception, e:
+                except Exception as e:
                     print(" process images %s error..." % str(file_name))
                     print(Exception, ":", e)
                     traceback.print_exc()
@@ -249,7 +250,12 @@ def get_all_filename(path,size):
     list_fake = search(path, 'fake_size' + str(size) + "x" + str(size))
     return list_real+list_fake
 
-def get_test_batch(path):
+def get_train_and_test_filename(path,size,test_size,seed):
+    list_real = search(path, 'real_size' + str(size) + "x" + str(size))
+    list_fake = search(path, 'fake_size' + str(size) + "x" + str(size))
+    return train_test_split(list_real+list_fake, test_size=test_size,random_state=seed)
+
+def get_test_batch(test_filesname):
     '''
             prepare every batch file data and label 【test】
     :param path:
@@ -268,14 +274,14 @@ def get_test_batch(path):
                     batch_label.append([0, 1])
                 elif 'fake_' in npy.split("/")[-1]:
                     batch_label.append([1, 0])
-        except Exception, e:
+        except Exception as e:
             print("file not exists! %s" % npy)
             batch_array.append(batch_array[-1])  # some nodule process error leading nonexistent of the file, using the last file copy to fill
             print(e.message)
 
     return np.array(batch_array), np.array(batch_label)
 
-def get_train_batch(batch_filename):
+def get_batch(batch_filename):
     '''
       prepare every batch file data and label 【train】
     :param batch_filename:
@@ -288,12 +294,11 @@ def get_train_batch(batch_filename):
             arr = np.load(npy)
             arr = arr.transpose(2,1,0)   #
             batch_array.append(arr)
-
             if 'real_' in  npy.split("/")[-1]:
                 batch_label.append([0,1])
             elif 'fake_' in npy.split("/")[-1]:
                 batch_label.append([1, 0])
-        except Exception,e:
+        except Exception as e:
             print("file not exists! %s"%npy)
             batch_array.append(batch_array[-1])  # some nodule process error leading nonexistent of the file, using the last file copy to fill
 
@@ -321,14 +326,14 @@ def angle_transpose(file,degree,flag_string):
 
 if __name__ =='__main__':
 
-    annatation_file = '/data/LUNA2016/lung_imgs/evaluationScript/annotations/annotations.csv'
-    candidate_file = '/data/LUNA2016/lung_imgs/candidates_V2.csv'
-    plot_output_path = '/data/LUNA2016/cubic_npy'
-    normalazation_output_path = '/data/LUNA2016/cubic_normalization_npy'
-    test_path = '/data/LUNA2016/cubic_normalization_test/'
-    for i in range(1,9):
-        dcim_path = '/data/LUNA2016/lung_imgs/subset'+str(i)+"/"
-        extract_real_cubic_from_mhd(dcim_path, annatation_file, plot_output_path,normalazation_output_path)
+    annotation_file = '../../data/annotations.csv'
+    candidate_file = '../../data/candidates_V2.csv'
+    plot_output_path = '../../data/cubic_npy/'
+    normalazation_output_path = '../../data/cubic_normalization_npy'
+    test_path = '../../data/cubic_normalization_test/'
+    for i in range(0,9):
+        dcim_path = '../../data/subset'+str(i)+"/"
+        extract_real_cubic_from_mhd(dcim_path, annotation_file, plot_output_path,normalazation_output_path)
         #extract_fake_cubic_from_mhd(dcim_path, candidate_file, plot_output_path,normalazation_output_path)
         print("  #######  extract cubic from subset%d finished    #######"%i)
     print("finished!...")
