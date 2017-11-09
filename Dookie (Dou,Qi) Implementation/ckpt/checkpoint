@@ -1,0 +1,6 @@
+model_checkpoint_path: "archi-1-12"
+all_model_checkpoint_paths: "archi-1-8"
+all_model_checkpoint_paths: "archi-1-9"
+all_model_checkpoint_paths: "archi-1-10"
+all_model_checkpoint_paths: "archi-1-11"
+all_model_checkpoint_paths: "archi-1-12"

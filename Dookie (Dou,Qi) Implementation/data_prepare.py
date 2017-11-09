@@ -251,9 +251,10 @@ def get_all_filename(path,size):
     return list_real+list_fake
 
 def get_train_and_test_filename(path,size,test_size,seed):
-    list_real = search(path, 'real_size' + str(size) + "x" + str(size))
-    list_fake = search(path, 'fake_size' + str(size) + "x" + str(size))
-    return train_test_split(list_real+list_fake, test_size=test_size,random_state=seed)
+    list_real = search(path, 'real_size' + str(size) + "x" + str(size))[:5000]
+    # list_fake = search(path, 'fake_size' + str(size) + "x" + str(size))[:5000]
+    # return train_test_split(list_real+list_fake, test_size=test_size,random_state=seed)\
+    return train_test_split(list_real, test_size=test_size,random_state=seed)
 
 def get_test_batch(test_filesname):
     '''

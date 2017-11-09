@@ -5,10 +5,9 @@
 
 '''
 import tensorflow as tf
-from data_prepare import get_train_batch,get_all_filename,get_test_batch
+from data_prepare import get_batch,get_train_and_test_filename
 import random
 import time
-import tensorflow.python.debug as tf_debug
 class model(object):
 
     def __init__(self,learning_rate,keep_prob,batch_size,epoch):
@@ -168,13 +167,13 @@ class model(object):
             return out_sm
 
     def fusion(self, input, keep_prob):
-    	with tf.name_scope("Fusion"):
-    		weight_1 = tf.constant(0.3,name="weight_1")
-    		weight_2 = tf.constant(0.4,name="weight_2")
-    		weight_3 = tf.constant(0.3,name="weight_3")
+        with tf.name_scope("Fusion"):
+            weight_1 = tf.constant(0.3,name="weight_1")
+            weight_2 = tf.constant(0.4,name="weight_2")
+            weight_3 = tf.constant(0.3,name="weight_3")
 
-    		##ARCHI-1
-    		# input size is batch_sizex20x20x6
+            ##ARCHI-1
+            # input size is batch_sizex20x20x6
             # 5x5x3 is the kernel size of conv1,1 is the input depth,64 is the number output channel
             w_conv1_1 = tf.Variable(tf.random_normal([3,5,5,1,64],stddev=0.001),dtype=tf.float32,name='w_conv1_1')
             b_conv1_1 = tf.Variable(tf.constant(0.01,shape=[64]),dtype=tf.float32,name='b_conv1_1')
@@ -321,7 +320,7 @@ class model(object):
 
             return out_fusion
 
-    def inference(self,npy_path,test_path,model_index,test_size,seed,train_flag=True):
+    def inference(self,npy_path,model_index,test_size,seed,train_flag=True):
 
         # some statistic index
         highest_acc = 0.0
@@ -329,10 +328,11 @@ class model(object):
 
         train_filenames,test_filenames = get_train_and_test_filename(npy_path,self.cubic_shape[model_index][1],test_size,seed)
         # how many time should one epoch should loop to feed all data
-        times = len(train_filenames) / self.batch_size
+        times = len(train_filenames) // self.batch_size
         if (len(train_filenames) % self.batch_size) != 0:
             times = times + 1
 
+        print("Training examples: ", len(train_filenames))
         # keep_prob used for dropout
         keep_prob = tf.placeholder(tf.float32)
         # take placeholder as input
@@ -345,7 +345,7 @@ class model(object):
         if train_flag:
             # softmax layer
             real_label = tf.placeholder(tf.float32, [None, 2])
-            cross_entropy = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(net_out, real_label))
+            cross_entropy = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(logits=net_out, labels=real_label))
             #cross_entropy = -tf.reduce_sum(real_label * tf.log(net_out))
             net_loss = tf.reduce_mean(cross_entropy)
 
